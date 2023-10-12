@@ -2,5 +2,8 @@
     "files.associations": {
         "*.java": "java",
         "iosfwd": "cpp"
-    }
+    },
+    "workbench.list.files.exclude": [
+        "**/*.exe"
+    ]
 }

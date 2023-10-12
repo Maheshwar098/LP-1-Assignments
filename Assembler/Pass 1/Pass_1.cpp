@@ -410,7 +410,7 @@ int main()
 {
     string fileName = "assembly_code.txt";
     
-    performPass1(fileName);
+    // performPass1(fileName);
     
     cout<<"Successfully executed"<<endl;
     return 0;
