@@ -39,6 +39,19 @@ class LiteralTableEntry : public TableEntry
     }
 };
 
+// check if string is a number
+bool isNumber(string str)
+{
+    for(int i = 0 ; i < str.length() ; i++)
+    {
+        if(str[i]-'0'>9)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 // string to number
 int stringToNum(string strNum)
 {
@@ -165,17 +178,33 @@ void updateSymTab(string symbol, int address, vector<SymbolTableEntry>&symTab)
 
     if(!isFound)
     {
-        int index = symTab.size()+1;
+        int index = symTab.back().id+1;
         SymbolTableEntry symTabEntry(index,symbol,address);
         symTab.push_back(symTabEntry);
     }
 }
 
 // update literal Table
-void updateLitTab(string literal, int address, vector<LiteralTableEntry>&litTab)
+void updateLitTab(string literal, int address, vector<LiteralTableEntry>&litTab,vector<int>poolTab)
 {
-    LiteralTableEntry litTabEntry(litTab.size()+1,literal,address);
-    litTab.push_back(litTabEntry);
+    int j = 0 ;
+    int litTabSize = litTab.size();
+    while(j<litTab.size() && litTab[j].id != poolTab.back())
+    {
+        j++;
+    }
+
+    for(int i= j ; i < litTab.size() ; i++ )
+    {
+        if(litTab[i].value == literal)
+        {
+            return;
+        }
+    }
+
+    LiteralTableEntry newLitTabEntry(litTab.back().id+1,literal,-1);
+    litTab.push_back(newLitTabEntry);
+
 }
 
 // process instruction
@@ -198,7 +227,7 @@ void processLiterals(vector<int>&poolTab, vector<LiteralTableEntry>&litTab, vect
         pass1Op.push_back(processedString);    
         lc++;
     }
-    int poolTbEntry = poolTab.back() + 1;
+    int poolTbEntry = litTab.back().id+1;
     poolTab.push_back(poolTbEntry);
 }
 
@@ -224,6 +253,20 @@ void equateLblAddresses(string lbl1, string lbl2, vector<SymbolTableEntry>symTab
             break;
         }
     }
+}
+
+// get literal id
+int getLiteralId(string literal, vector<LiteralTableEntry>litTab)
+{
+    for(int i = 0 ; i < litTab.size() ; i++)
+    {
+        if(litTab[i].value == literal)
+        {
+            return litTab[i].id;
+        }
+    }
+
+    return -1;
 }
 
 // Pass 1
@@ -295,6 +338,7 @@ void performPass1(string fileName)
             {
                 string processedLine = "(AD,1)";
                 pass1Op.push_back(processedLine);
+                lc = 0;
             }
             else if (words[0] == "STOP")
             {
@@ -339,15 +383,22 @@ void performPass1(string fileName)
             }
             else if(IS[words[0]])
             {
-                string preprocessedString = numToStr(lc)+"  (IS,"+numToStr(IS[words[0]])+")";
-
-                if(words[1][0] == '=')
-                {
-                    updateLitTab(words[1],-1,litTab);
-                }
-                
+                string processedString = numToStr(lc)+"  (IS,"+numToStr(IS[words[0]])+"),";
 
             }
+            string processedString = "";
+            if(words[1][0] == '=')
+            {
+                updateLitTab(words[1],-1,litTab,poolTab);
+                int literalId = getLiteralId(words[1],litTab);
+                processedString = processedString + "(L,"+numToStr(literalId)+")";
+            }
+            else if (!isNumber(words[1]))
+            {
+                updateSymTab(words[1],-1,symTab);
+                // processedString = processedString + 
+            }
+        
         }
     }
     
