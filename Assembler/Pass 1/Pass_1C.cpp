@@ -99,6 +99,7 @@ class ICGenerator
         R["BREG"] = "02";
         R["CREG"] = "03";
         R["DREG"] = "04";
+        R["ANY"] = "06";
     }
 
     private:
@@ -256,17 +257,18 @@ class ICGenerator
 
     void updateSymTab(string label, int address, vector<SymTabEntry>&symTab)
     {
+        if(label == "")
+        {
+            return;
+        }
+
         int len = symTab.size();
 
         for(int i = 0 ; i < len ; i++)
         {
             if(symTab[i].symbol == label)
             {
-                if(symTab[i].address == -1)
-                {
-                    symTab[i].address = address;
-                }
-                
+                symTab[i].address = address;
                 return;
             }
         }
@@ -280,7 +282,7 @@ class ICGenerator
     {
         if(opCode == "STOP")
         {
-            proccStr = proccStr + "(AD,0)";
+            proccStr = proccStr + "(IS,0)";
             return ;
         }
 
@@ -382,14 +384,25 @@ class ICGenerator
         }
         else
         {
-            updateSymTab(operand,-1,symTab);
             int indx = getSymTabIndx(operand,symTab);
+            int addr = -1;
+            if(indx==-1)
+            {
+                updateSymTab(operand,-1,symTab);
+            }
+            
+            indx = getSymTabIndx(operand,symTab);
             proccStr = proccStr + "(S,"+numToStr(indx)+")";
         }
 
         return ;
     }
-
+    
+    void drawLine()
+    {
+        cout<<"------------------------------------------------------"<<endl;
+    }
+    
     public:
     void performPass1(string fileName)
     {
@@ -403,8 +416,10 @@ class ICGenerator
         vector<string>IC;
         int lc = 0 ;
 
+        // generating IC
         for(int i = 0 ; i < noOfLines ; i++)
         {
+
             Instruction instr = preProccInstr[i];
 
             if((instr.label!=""))
@@ -420,6 +435,7 @@ class ICGenerator
                 string opcode = instr.opcode;
                 if(opcode == "START")
                 {
+                    proccStr = "-     ";
                     if(instr.operand_1 !="")
                     {
                         lc = strToNum(instr.operand_1);
@@ -428,8 +444,61 @@ class ICGenerator
                 }
                 else if (opcode == "ORIGIN")
                 {
-                    lc = strToNum(instr.operand_1);
-                    lc--;
+                    proccStr = "-      ";
+                    addOpCode(proccStr,opcode);
+                    if(isStrNum(instr.operand_1))
+                    {
+                        lc = strToNum(instr.operand_1);
+                        proccStr = proccStr + "(C,"+instr.operand_1+")";
+                    }
+                    else
+                    {
+                        string label = instr.operand_1;
+                        string extraPart = "";
+
+                        int lbllen = label.length();
+                        int i = 0;
+                        for(i = 0 ; i < lbllen ; i++)
+                        {
+                            if(label[i] == '+' || label[i] == '-')
+                            {
+                                break;
+                            }
+                        }
+    
+                        int signIndex = i;
+                        if(i < lbllen)
+                        {
+                            label = label.substr(0,i);
+                            extraPart = instr.operand_1.substr(i+1,lbllen-i-1);
+                        }
+                        
+                        int indx = getSymTabIndx(label,symTab);
+                        proccStr = proccStr + "(S,"+numToStr(indx)+")";
+
+                        lc = symTab[indx-1].address;
+
+                        int toAdd = 0;
+
+                        if(signIndex<lbllen)
+                        {
+                            toAdd = strToNum(extraPart);
+
+                            if(instr.operand_1[signIndex] == '+')
+                            {
+                                lc = lc + toAdd;
+                                proccStr = proccStr + "+"+extraPart;
+                            }
+                            else
+                            {
+                                lc = lc - toAdd;
+                                proccStr = proccStr + "-"+extraPart;
+                            }
+                        }
+                        updateSymTab(instr.label,lc,symTab);
+                    }
+                    IC.push_back(proccStr);
+                    continue;
                 }
                 else if (opcode == "LTORG" || opcode == "END")
                 {
@@ -454,16 +523,68 @@ class ICGenerator
                     poolTab.push_back(nextAddr);
                     if(opcode == "END")
                     {
-                        IC.push_back("-     (AD,02)");
+                        proccStr = "-     (AD,02)";
+                        if(instr.operand_1 != "")
+                        {
+                            proccStr = proccStr + "(S,"+numToStr(getSymTabIndx(instr.operand_1,symTab))+")";
+                        }
+                        IC.push_back(proccStr);
                     }
                     continue;
                 }
                 else if (opcode == "EQU")
                 {
+                    proccStr = "-      ";
                     string lbl1 = instr.label ;
                     string lbl2 = instr.operand_1;
                     int lbl2indx = getSymTabIndx(lbl2,symTab);
-                    updateSymTab(lbl1,symTab[lbl2indx].address,symTab);
+                    if(isStrNum(instr.operand_1))
+                    {
+                        updateSymTab(instr.label,strToNum(instr.operand_1),symTab);
+                        proccStr = "-      (AD,04),(C,"+instr.operand_1+")";
+                    }
+                    else
+                    {
+                        string label = instr.operand_1;
+                        int lbllen = label.length();
+                        int signIndx = -1;
+                        string remainingPart = "";
+                        int i = 0 ;
+                        for(i = 0 ; i < lbllen ; i++)
+                        {
+                            if(label[i] == '+' || label[i] == '-')
+                            {
+                                signIndx = i ;
+                                break;
+                            }
+                        }
+
+                        if(signIndx != -1)
+                        {
+                            label = label.substr(0,signIndx);
+                            remainingPart = instr.operand_1.substr(signIndx+1,lbllen-signIndx-1);
+                        }
+
+                        int indx = getSymTabIndx(label,symTab);
+                        int addrToAssg = symTab[indx-1].address;
+                        if(signIndx!=-1)
+                        {
+                            if(instr.operand_1[signIndx] == '+')
+                            {
+                                addrToAssg = addrToAssg + strToNum(remainingPart);
+                            }
+                            else
+                            {
+                                addrToAssg = addrToAssg - strToNum(remainingPart);
+                            }
+                        }
+                        updateSymTab(lbl1,addrToAssg,symTab);
+                        proccStr = "-      (AD,04),(S,"+numToStr(getSymTabIndx(label,symTab))+")"+instr.operand_1[signIndx]+remainingPart;
+                        
+                    }
+                    IC.push_back(proccStr);
+                    continue;
+
                 }
                 else if (opcode == "DS")
                 {
@@ -493,11 +614,15 @@ class ICGenerator
 
         int IClen = IC.size();
 
+        drawLine();
+        // displaying IC
         for(int i = 0 ; i < IClen ; i++)
         {
             cout<<IC[i]<<endl;
         }
 
+        // displaying tables formed
+        drawLine();
         cout<<"SymTab : "<<endl;
         int symTabLen = symTab.size();
         for(int i = 0 ; i < symTabLen ; i++)
@@ -505,6 +630,7 @@ class ICGenerator
             cout<<symTab[i].id<<"   "<<symTab[i].symbol<<"  "<<symTab[i].address<<endl;
         }
 
+        drawLine();
         cout<<"LitTab : "<<endl;
         int litTabLen = litTab.size();
         for(int i = 0 ; i < litTabLen ; i++)
@@ -512,6 +638,7 @@ class ICGenerator
             cout<<litTab[i].id<<"   "<<litTab[i].literal<<"     "<<litTab[i].address<<endl;
         }
 
+        drawLine();
         cout<<"PoolTab : "<<endl;
         int poolTabLen = poolTab.size();
         for(int i = 0 ; i < poolTabLen ; i++)
@@ -525,7 +652,10 @@ class ICGenerator
 
 int main()
 {
-    string fileName = "test.txt";
+    // string fileName = "test_1.txt";
+    // string fileName = "test_2.txt";
+    // string fileName = "test_3.txt";
+    string fileName = "test_4.txt";
     ICGenerator generator;
     generator.performPass1(fileName);
     return 0 ;
