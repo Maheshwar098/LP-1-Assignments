@@ -3,7 +3,7 @@ import socket
 # DEFINE IP, PORT, ETC
 HEADER = 64
 PORT = 5050
-SERVER = '172.25.240.1'
+SERVER = '192.168.22.180'
 ADDRESS = (SERVER, PORT)
 FORMAT = 'utf-8'
 DISCONNECT_MSG = '!DISCONNECT'
@@ -18,5 +18,7 @@ def send(msg):
     send_leng += b' '*(HEADER-len(send_leng))
     client.send(send_leng)
     client.send(message)
+    response = client.recv(HEADER).decode(FORMAT)
+    print(response)    
 
 send("Hello World!")
