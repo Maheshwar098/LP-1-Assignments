@@ -3,5 +3,6 @@
         "*.java": "java",
         "random": "cpp",
         "limits": "cpp"
-    }
+    },
+    "C_Cpp.errorSquiggles": "enabled"
 }

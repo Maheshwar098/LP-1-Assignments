@@ -141,6 +141,18 @@ class Scheduler
         return maxPriorityIndx;
     }
     
+    void updateQueue(queue<int>&q,int startTime, int currTime, vector<Process>processes, int remainingTime[])
+    {
+        int n = processes.size();
+        for(int i = 0 ; i < n ; i++ )
+        {
+            if(processes[i].arrivalTime > startTime && processes[i].arrivalTime <= currTime)
+            {
+                q.push(i);
+            }
+        }
+    }
+
     public:
     static bool comp(Process p1, Process p2)
     {
@@ -255,7 +267,7 @@ class Scheduler
         int currTime = processes[0].arrivalTime;
         queue<int>q;
         vector<TimeSlot>timeLine;
-        queue.push_back(0)
+        q.push(0);
         while(!q.empty())
         {
             int startTime = currTime;
@@ -263,9 +275,24 @@ class Scheduler
             q.pop();
             int executionTime = min(timeQuant,remainingTime[indx]);
             currTime = currTime + executionTime;
-            remainingTime[i] = remainingTime[i] - executionTime;
-
+            remainingTime[indx] = remainingTime[indx] - executionTime;
+            updateQueue(q,startTime,currTime,processes,remainingTime);
+            if(remainingTime[indx] == 0)
+            {
+                processes[indx].completionTime = currTime;
+                processes[indx].turnAroundTime = processes[indx].completionTime - processes[indx].arrivalTime;
+                processes[indx].waitingTime = processes[indx].turnAroundTime - processes[indx].burstTime;
+            }
+            else
+            {
+                q.push(indx);
+            }
+            timeLine.push_back(TimeSlot(startTime, currTime, processes[indx].id));
+            
         }
+
+        displayTimeLine(timeLine);
+        displayProcesses(processes);
 
     }
 };
@@ -302,25 +329,33 @@ int main()
     // sc.SJFPreemptive(processes);
 
     // ==========================================================================
-    vector<Process>processes;
-    processes.push_back(Process(1,0,3,2));
-    processes.push_back(Process(2,2,5,6));
-    processes.push_back(Process(3,1,4,3));
-    processes.push_back(Process(4,4,2,5));
-    processes.push_back(Process(5,6,9,7));
-    processes.push_back(Process(6,5,4,4));
-    processes.push_back(Process(7,7,10,10));
-    Scheduler sc;
-    sc.priorityNonPreemptive(processes);
+    // vector<Process>processes;
+    // processes.push_back(Process(1,0,3,2));
+    // processes.push_back(Process(2,2,5,6));
+    // processes.push_back(Process(3,1,4,3));
+    // processes.push_back(Process(4,4,2,5));
+    // processes.push_back(Process(5,6,9,7));
+    // processes.push_back(Process(6,5,4,4));
+    // processes.push_back(Process(7,7,10,10));
+    // Scheduler sc;
+    // sc.priorityNonPreemptive(processes);
     
-// Process ID	Priority	Arrival Time	Burst Time
-//     1	2	0	3
-// 2	6	2	5
-// 3	3	1	4
-// 4	5	4	2
-// 5	7	6	9
-// 6	4	5	4
-// 7	10	7	10
+    // ==========================================================================
+    vector<Process>processes;
+    processes.push_back(Process(1,0,5));
+    processes.push_back(Process(2,1,6));
+    processes.push_back(Process(3,2,3));
+    processes.push_back(Process(4,3,1));
+    processes.push_back(Process(5,4,5));
+    processes.push_back(Process(6,6,4));
+    Scheduler sc;
+    sc.roundRobin(processes,4);
+//     P1	0	5
+// P2	1	6
+// P3	2	3
+// P4	3	1
+// P5	4	5
+// P6	6	4
 
 
     return 0 ;
