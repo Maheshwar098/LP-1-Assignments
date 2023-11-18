@@ -1,0 +1,3 @@
+1  &INCR_VAL  -
+2  &REG  AREG
+3  &THIRD  100

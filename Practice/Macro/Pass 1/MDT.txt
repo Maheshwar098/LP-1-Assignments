@@ -1,0 +1,6 @@
+1    MOVER  (P,3)  (P,1)
+2    ADD  (P,3)  (P,2)
+3    MOVEM  (P,3)  (P,1)
+4    MOVEM  BREG  (P,3)
+5    MOVER  BREG  (P,3)
+6    ADD  BREG  (P,3)

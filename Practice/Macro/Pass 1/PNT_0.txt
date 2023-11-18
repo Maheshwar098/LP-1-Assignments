@@ -1,0 +1,3 @@
+1  &MEM_VAL
+2  &INCR_VAL
+3  &REG

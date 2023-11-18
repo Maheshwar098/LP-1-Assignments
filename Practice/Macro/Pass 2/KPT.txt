@@ -1,0 +1,2 @@
+1 &E AREG
+2 &O DREG
