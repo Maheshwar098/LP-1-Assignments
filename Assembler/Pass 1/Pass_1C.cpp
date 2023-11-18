@@ -402,18 +402,14 @@ class ICGenerator
             if(instr.opcode == "DS")
             {
                 int change = stoi(instr.operand_1);
-                lc = lc + change;
+                lc = lc + change-1;
             }
-            else
-            {
-                lc++;
-            }
+            
         }
         else
         {
             processOperand(instr.operand_1);
             processOperand(instr.operand_2);
-            lc++;
         }
         
         string ICLine = "";
@@ -437,7 +433,11 @@ class ICGenerator
             ICLines.push_back(ICLine);
         }
         
-
+        if(IS[instr.opcode] != "" || DL[instr.opcode] != "")
+        {
+            lc++;
+        }
+        
         return ICLines;
     }
 
@@ -515,7 +515,7 @@ class ICGenerator
 
 int main()
 {
-    string fileName = "test_2.txt";
+    string fileName = "test_3.txt";
     ICGenerator generator;
     generator.generateIC(fileName);
     
